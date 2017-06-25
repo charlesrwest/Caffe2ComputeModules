@@ -1,0 +1,608 @@
+name: "mnist_train"
+op {
+  input: "dbreader_/home/charlesrwest/cpp/projects/caffe2/cpp/MNIST/datasets/mnist-train-nchw-leveldb"
+  output: "data_uint8"
+  output: "label"
+  name: ""
+  type: "TensorProtosDBInput"
+  arg {
+    name: "batch_size"
+    i: 64
+  }
+}
+op {
+  input: "data_uint8"
+  output: "data"
+  name: ""
+  type: "Cast"
+  arg {
+    name: "to"
+    i: 1
+  }
+}
+op {
+  input: "data"
+  output: "data"
+  name: ""
+  type: "Scale"
+  arg {
+    name: "scale"
+    f: 0.00390625
+  }
+}
+op {
+  input: "data"
+  output: "data"
+  name: ""
+  type: "StopGradient"
+}
+op {
+  input: "data"
+  input: "conv1_w"
+  input: "conv1_b"
+  output: "conv1"
+  name: ""
+  type: "Conv"
+  arg {
+    name: "kernel"
+    i: 5
+  }
+  arg {
+    name: "exhaustive_search"
+    i: 0
+  }
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  engine: "CUDNN"
+}
+op {
+  input: "conv1"
+  output: "pool1"
+  name: ""
+  type: "MaxPool"
+  arg {
+    name: "kernel"
+    i: 2
+  }
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  arg {
+    name: "stride"
+    i: 2
+  }
+  engine: "CUDNN"
+}
+op {
+  input: "pool1"
+  input: "conv2_w"
+  input: "conv2_b"
+  output: "conv2"
+  name: ""
+  type: "Conv"
+  arg {
+    name: "kernel"
+    i: 5
+  }
+  arg {
+    name: "exhaustive_search"
+    i: 0
+  }
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  engine: "CUDNN"
+}
+op {
+  input: "conv2"
+  output: "pool2"
+  name: ""
+  type: "MaxPool"
+  arg {
+    name: "kernel"
+    i: 2
+  }
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  arg {
+    name: "stride"
+    i: 2
+  }
+  engine: "CUDNN"
+}
+op {
+  input: "pool2"
+  input: "fc3_w"
+  input: "fc3_b"
+  output: "fc3"
+  name: ""
+  type: "FC"
+}
+op {
+  input: "fc3"
+  output: "fc3"
+  name: ""
+  type: "Relu"
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  engine: "CUDNN"
+}
+op {
+  input: "fc3"
+  input: "pred_w"
+  input: "pred_b"
+  output: "pred"
+  name: ""
+  type: "FC"
+}
+op {
+  input: "pred"
+  output: "softmax"
+  name: ""
+  type: "Softmax"
+  engine: "CUDNN"
+}
+op {
+  input: "softmax"
+  input: "label"
+  output: "xent"
+  name: ""
+  type: "LabelCrossEntropy"
+}
+op {
+  input: "xent"
+  output: "loss"
+  name: ""
+  type: "AveragedLoss"
+}
+op {
+  input: "softmax"
+  input: "label"
+  output: "accuracy"
+  name: ""
+  type: "Accuracy"
+}
+op {
+  input: "loss"
+  output: "loss_autogen_grad"
+  name: ""
+  type: "ConstantFill"
+  arg {
+    name: "value"
+    f: 1.0
+  }
+}
+op {
+  input: "xent"
+  input: "loss_autogen_grad"
+  output: "xent_grad"
+  name: ""
+  type: "AveragedLossGradient"
+  is_gradient_op: true
+}
+op {
+  input: "softmax"
+  input: "label"
+  input: "xent_grad"
+  output: "softmax_grad"
+  name: ""
+  type: "LabelCrossEntropyGradient"
+  is_gradient_op: true
+}
+op {
+  input: "softmax"
+  input: "softmax_grad"
+  output: "pred_grad"
+  name: ""
+  type: "SoftmaxGradient"
+  engine: "CUDNN"
+  is_gradient_op: true
+}
+op {
+  input: "fc3"
+  input: "pred_w"
+  input: "pred_grad"
+  output: "pred_w_grad"
+  output: "pred_b_grad"
+  output: "fc3_grad"
+  name: ""
+  type: "FCGradient"
+  is_gradient_op: true
+}
+op {
+  input: "fc3"
+  input: "fc3_grad"
+  output: "fc3_grad"
+  name: ""
+  type: "ReluGradient"
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  engine: "CUDNN"
+  is_gradient_op: true
+}
+op {
+  input: "pool2"
+  input: "fc3_w"
+  input: "fc3_grad"
+  output: "fc3_w_grad"
+  output: "fc3_b_grad"
+  output: "pool2_grad"
+  name: ""
+  type: "FCGradient"
+  is_gradient_op: true
+}
+op {
+  input: "conv2"
+  input: "pool2"
+  input: "pool2_grad"
+  output: "conv2_grad"
+  name: ""
+  type: "MaxPoolGradient"
+  arg {
+    name: "kernel"
+    i: 2
+  }
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  arg {
+    name: "stride"
+    i: 2
+  }
+  engine: "CUDNN"
+  is_gradient_op: true
+}
+op {
+  input: "pool1"
+  input: "conv2_w"
+  input: "conv2_grad"
+  output: "conv2_w_grad"
+  output: "conv2_b_grad"
+  output: "pool1_grad"
+  name: ""
+  type: "ConvGradient"
+  arg {
+    name: "kernel"
+    i: 5
+  }
+  arg {
+    name: "exhaustive_search"
+    i: 0
+  }
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  engine: "CUDNN"
+  is_gradient_op: true
+}
+op {
+  input: "conv1"
+  input: "pool1"
+  input: "pool1_grad"
+  output: "conv1_grad"
+  name: ""
+  type: "MaxPoolGradient"
+  arg {
+    name: "kernel"
+    i: 2
+  }
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  arg {
+    name: "stride"
+    i: 2
+  }
+  engine: "CUDNN"
+  is_gradient_op: true
+}
+op {
+  input: "data"
+  input: "conv1_w"
+  input: "conv1_grad"
+  output: "conv1_w_grad"
+  output: "conv1_b_grad"
+  output: "data_grad"
+  name: ""
+  type: "ConvGradient"
+  arg {
+    name: "kernel"
+    i: 5
+  }
+  arg {
+    name: "exhaustive_search"
+    i: 0
+  }
+  arg {
+    name: "order"
+    s: "NCHW"
+  }
+  engine: "CUDNN"
+  is_gradient_op: true
+}
+op {
+  input: "iter"
+  output: "iter"
+  name: ""
+  type: "Iter"
+}
+op {
+  input: "iter"
+  output: "LR"
+  name: ""
+  type: "LearningRate"
+  arg {
+    name: "policy"
+    s: "step"
+  }
+  arg {
+    name: "stepsize"
+    i: 1
+  }
+  arg {
+    name: "base_lr"
+    f: -0.10000000149
+  }
+  arg {
+    name: "gamma"
+    f: 0.999000012875
+  }
+}
+op {
+  input: "conv1_w"
+  input: "ONE"
+  input: "conv1_w_grad"
+  input: "LR"
+  output: "conv1_w"
+  name: ""
+  type: "WeightedSum"
+}
+op {
+  input: "conv1_b"
+  input: "ONE"
+  input: "conv1_b_grad"
+  input: "LR"
+  output: "conv1_b"
+  name: ""
+  type: "WeightedSum"
+}
+op {
+  input: "conv2_w"
+  input: "ONE"
+  input: "conv2_w_grad"
+  input: "LR"
+  output: "conv2_w"
+  name: ""
+  type: "WeightedSum"
+}
+op {
+  input: "conv2_b"
+  input: "ONE"
+  input: "conv2_b_grad"
+  input: "LR"
+  output: "conv2_b"
+  name: ""
+  type: "WeightedSum"
+}
+op {
+  input: "fc3_w"
+  input: "ONE"
+  input: "fc3_w_grad"
+  input: "LR"
+  output: "fc3_w"
+  name: ""
+  type: "WeightedSum"
+}
+op {
+  input: "fc3_b"
+  input: "ONE"
+  input: "fc3_b_grad"
+  input: "LR"
+  output: "fc3_b"
+  name: ""
+  type: "WeightedSum"
+}
+op {
+  input: "pred_w"
+  input: "ONE"
+  input: "pred_w_grad"
+  input: "LR"
+  output: "pred_w"
+  name: ""
+  type: "WeightedSum"
+}
+op {
+  input: "pred_b"
+  input: "ONE"
+  input: "pred_b_grad"
+  input: "LR"
+  output: "pred_b"
+  name: ""
+  type: "WeightedSum"
+}
+op {
+  input: "accuracy"
+  name: ""
+  type: "Print"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "loss"
+  name: ""
+  type: "Print"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "conv1_w"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "conv1_w_grad"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "conv1_b"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "conv1_b_grad"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "conv2_w"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "conv2_w_grad"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "conv2_b"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "conv2_b_grad"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "fc3_w"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "fc3_w_grad"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "fc3_b"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "fc3_b_grad"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "pred_w"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "pred_w_grad"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "pred_b"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+op {
+  input: "pred_b_grad"
+  name: ""
+  type: "Summarize"
+  arg {
+    name: "to_file"
+    i: 1
+  }
+}
+external_input: "dbreader_/home/charlesrwest/cpp/projects/caffe2/cpp/MNIST/datasets/mnist-train-nchw-leveldb"
+external_input: "conv1_w"
+external_input: "conv1_b"
+external_input: "conv2_w"
+external_input: "conv2_b"
+external_input: "fc3_w"
+external_input: "fc3_b"
+external_input: "pred_w"
+external_input: "pred_b"
+external_input: "iter"
+external_input: "ONE"

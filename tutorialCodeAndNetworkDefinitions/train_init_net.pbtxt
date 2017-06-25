@@ -1,0 +1,128 @@
+name: "mnist_train_init"
+op {
+  output: "dbreader_/home/charlesrwest/cpp/projects/caffe2/cpp/MNIST/datasets/mnist-train-nchw-leveldb"
+  name: ""
+  type: "CreateDB"
+  arg {
+    name: "db_type"
+    s: "leveldb"
+  }
+  arg {
+    name: "db"
+    s: "/home/charlesrwest/cpp/projects/caffe2/cpp/MNIST/datasets/mnist-train-nchw-leveldb"
+  }
+}
+op {
+  output: "conv1_w"
+  name: ""
+  type: "XavierFill"
+  arg {
+    name: "shape"
+    ints: 20
+    ints: 1
+    ints: 5
+    ints: 5
+  }
+}
+op {
+  output: "conv1_b"
+  name: ""
+  type: "ConstantFill"
+  arg {
+    name: "shape"
+    ints: 20
+  }
+}
+op {
+  output: "conv2_w"
+  name: ""
+  type: "XavierFill"
+  arg {
+    name: "shape"
+    ints: 50
+    ints: 20
+    ints: 5
+    ints: 5
+  }
+}
+op {
+  output: "conv2_b"
+  name: ""
+  type: "ConstantFill"
+  arg {
+    name: "shape"
+    ints: 50
+  }
+}
+op {
+  output: "fc3_w"
+  name: ""
+  type: "XavierFill"
+  arg {
+    name: "shape"
+    ints: 500
+    ints: 800
+  }
+}
+op {
+  output: "fc3_b"
+  name: ""
+  type: "ConstantFill"
+  arg {
+    name: "shape"
+    ints: 500
+  }
+}
+op {
+  output: "pred_w"
+  name: ""
+  type: "XavierFill"
+  arg {
+    name: "shape"
+    ints: 10
+    ints: 500
+  }
+}
+op {
+  output: "pred_b"
+  name: ""
+  type: "ConstantFill"
+  arg {
+    name: "shape"
+    ints: 10
+  }
+}
+op {
+  output: "iter"
+  name: ""
+  type: "ConstantFill"
+  arg {
+    name: "dtype"
+    i: 10
+  }
+  arg {
+    name: "shape"
+    ints: 1
+  }
+  arg {
+    name: "value"
+    i: 0
+  }
+  device_option {
+    device_type: 0
+    cuda_gpu_id: 0
+  }
+}
+op {
+  output: "ONE"
+  name: ""
+  type: "ConstantFill"
+  arg {
+    name: "shape"
+    ints: 1
+  }
+  arg {
+    name: "value"
+    f: 1.0
+  }
+}

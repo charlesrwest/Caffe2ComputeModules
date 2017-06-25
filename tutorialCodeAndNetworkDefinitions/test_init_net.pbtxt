@@ -1,0 +1,14 @@
+name: "mnist_test_init"
+op {
+  output: "dbreader_/home/charlesrwest/cpp/projects/caffe2/python/MNIST/mnist-test-nchw-leveldb"
+  name: ""
+  type: "CreateDB"
+  arg {
+    name: "db_type"
+    s: "leveldb"
+  }
+  arg {
+    name: "db"
+    s: "/home/charlesrwest/cpp/projects/caffe2/python/MNIST/mnist-test-nchw-leveldb"
+  }
+}
