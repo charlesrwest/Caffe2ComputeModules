@@ -3,13 +3,15 @@
 
 using namespace GoodBot;
 
-FullyConnectedLayerDefinition::FullyConnectedLayerDefinition(const FullyConnectedLayerDefinitionParameters& inputParameters) : inputBlobName(inputParameters.inputBlobName), outputBlobName(inputParameters.outputBlobName), layerName(inputParameters.layerName), weightFillType(inputParameters.weightFillType), biasFillType(inputParameters.biasFillType), activationType(inputParameters.activationType), lossType(inputParameters.lossType), numberOfInputs(inputParameters.numberOfInputs), numberOfNodes(inputParameters.numberOfNodes)
+FullyConnectedLayerDefinition::FullyConnectedLayerDefinition(const FullyConnectedLayerDefinitionParameters& inputParameters) : inputBlobName(inputParameters.inputBlobName), layerName(inputParameters.layerName), weightFillType(inputParameters.weightFillType), biasFillType(inputParameters.biasFillType), activationType(inputParameters.activationType), numberOfInputs(inputParameters.numberOfInputs), numberOfNodes(inputParameters.numberOfNodes)
 {
 }
 
 const std::string& FullyConnectedLayerDefinition::Type() const
 {
-return "FullyConnectedLayerDefinition";
+static const std::string type = "FullyConnectedLayerDefinition";
+
+return type;
 }
 
 const std::string& FullyConnectedLayerDefinition::Name() const
@@ -17,22 +19,22 @@ const std::string& FullyConnectedLayerDefinition::Name() const
 return layerName;
 }
 
-std::vector<std::string> FullyConnectedLayerDefinition::GetInputBlobNames() const
+std::vector<std::string> FullyConnectedLayerDefinition::GetDeployInputBlobNames() const
 {
 return {inputBlobName};
 }
 
-std::vector<std::string> FullyConnectedLayerDefinition::GetOutputBlobNames() const
+std::vector<std::string> FullyConnectedLayerDefinition::GetDeployOutputBlobNames() const
 {
-return {outputBlobName};
+return {GetOutputBlobName()};
 }
 
-std::vector<std::string> FullyConnectedLayerDefinition::GetGradientBlobNames() const
+std::vector<std::string> FullyConnectedLayerDefinition::GetTrainingGradientBlobNames() const
 {
-return {MakeGradientOperatorBlobName(outputBlobName), MakeGradientOperatorBlobName(GetFullyConnectedOutputBlobName())};
+return {MakeGradientOperatorBlobName(GetOutputBlobName()), MakeGradientOperatorBlobName(GetFullyConnectedOutputBlobName())};
 }
 
-std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetNetworkOperators() const
+std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetDeployNetworkOperators() const
 {
 std::vector<caffe2::OperatorDef> result;
 
@@ -49,12 +51,12 @@ result.emplace_back();
 caffe2::OperatorDef& activationOperator = result.back();
 activationOperator.set_type(activationType);
 activationOperator.add_input(GetFullyConnectedOutputBlobName());
-activationOperator.add_output(outputBlobName);
+activationOperator.add_output(GetOutputBlobName());
 
 return result;
 }
 
-std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetNetworkInitializationOperators() const
+std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetTrainingNetworkInitializationOperators() const
 {
 std::vector<caffe2::OperatorDef> result;
 
@@ -62,39 +64,25 @@ std::vector<caffe2::OperatorDef> result;
 result.emplace_back();
 caffe2::OperatorDef& weightOperator = result.back();
 weightOperator.set_type(weightFillType);
-caffe2::Argument& weightShape = weightOperator.add_arg();
+caffe2::Argument& weightShape = *weightOperator.add_arg();
 weightShape.set_name("shape");
 weightShape.add_ints(numberOfNodes); //Number of nodes in this layer
 weightShape.add_ints(numberOfInputs); //Number of inputs to this layer
 weightOperator.add_output(GetWeightsBlobName());
 
+
 result.emplace_back();
 caffe2::OperatorDef& biasOperator = result.back();
-biasOperator.set_type(weightFillType);
-caffe2::Argument& biasShape = biasOperator.add_arg();
+biasOperator.set_type(biasFillType);
+biasOperator.add_output(GetBiasesBlobName());
+caffe2::Argument& biasShape = *biasOperator.add_arg();
 biasShape.set_name("shape");
 biasShape.add_ints(numberOfNodes); //Number of nodes in this layer
-weightOperator.add_output(GetBiasesBlobName());
+
 
 return result;
 }
 
-std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetGradientOperators() const
-{
-std::vector<caffe2::OperatorDef> result;
-
-std::vector<caffe2::OperatorDef> networkOperators = GetNetworkOperators();
-
-//Reverse the order and make a gradient operator for each network operator
-for(std::vector<caffe2::OperatorDef>::reverse_iterator iter = networkOperators.rbegin(); iter != networkOperators.rend(); iter++ )
-{
-std::vector<caffe2::OperatorDef> gradientOperators = GetGradientOperatorsFromOperator(*iter);
-
-result.insert(result.end(), gradientOperators.begin(), gradientOperators.end());
-}
-
-return result;
-}
 
 std::string FullyConnectedLayerDefinition::GetWeightsBlobName() const
 {
@@ -109,6 +97,11 @@ return Name() + "_biases";
 std::string FullyConnectedLayerDefinition::GetFullyConnectedOutputBlobName() const
 {
 return Name() + "_fully_connected";
+}
+
+std::string FullyConnectedLayerDefinition::GetOutputBlobName() const
+{
+return Name() + "_output";
 }
 
 int64_t FullyConnectedLayerDefinition::GetNumberOfNodes() const

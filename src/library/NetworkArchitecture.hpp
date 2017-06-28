@@ -20,7 +20,7 @@ virtual caffe2::NetDef GetTrainingInitializationNetwork() const = 0;
 
 virtual caffe2::NetDef GetTrainingNetwork() const = 0;
 
-virtual caffe2::NetDef GetTestInitializationNetwork() const = 0;
+//virtual caffe2::NetDef GetTestInitializationNetwork() const = 0;
 
 virtual caffe2::NetDef GetTestNetwork() const = 0;
 

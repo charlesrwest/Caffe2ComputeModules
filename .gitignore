@@ -9,6 +9,7 @@ CTestTestfile.cmake
 *.so
 Makefile
 moc_*
-/bin/*
+build/bin/*
 /doc/*
 Doxyfile
+

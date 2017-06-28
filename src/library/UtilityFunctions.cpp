@@ -1,6 +1,7 @@
 #include "UtilityFunctions.hpp"
 
 #include<cstdlib>
+#include "caffe2/core/operator_gradient.h"
 
 using namespace GoodBot;
 
@@ -25,15 +26,18 @@ return result;
 
 std::string GoodBot::MakeGradientOperatorBlobName(const std::string& inputOperatorBlobName)
 {
-return inputOperatorBlobName + "_gradient";
+return inputOperatorBlobName + "_grad";
 }
 
 std::vector<caffe2::OperatorDef> GoodBot::GetGradientOperatorsFromOperator(const caffe2::OperatorDef& inputOperator)
 {
 std::vector<caffe2::GradientWrapper> gradientBlobNames;
-for(int64_t outputIndex = 0; outputIndex < wrappers.size(); outputIndex++)
+for(int64_t outputIndex = 0; outputIndex < inputOperator.output_size(); outputIndex++)
 {
-gradientBlobNames.emplace_back(MakeGradientOperatorBlobName(inputOperator.output(outputIndex)));
+caffe2::GradientWrapper wrapper;
+wrapper.dense_ = MakeGradientOperatorBlobName(inputOperator.output(outputIndex));
+
+gradientBlobNames.emplace_back(wrapper);
 }
 
 caffe2::GradientOpsMeta operatorsAndWrappers = caffe2::GetGradientForOp(inputOperator, gradientBlobNames);

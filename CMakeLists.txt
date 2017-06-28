@@ -11,6 +11,7 @@ ADD_DEFINITIONS(-std=c++11)
 
 find_package(Eigen3 REQUIRED)
 find_package(Caffe2 REQUIRED)
+find_package(Protobuf REQUIRED)
 
 
 #Tell compiler where to find required libraries
@@ -42,7 +43,7 @@ ADD_EXECUTABLE(unitTests ${UNIT_TESTS_EXECUTABLE_SOURCE})
 
 ADD_EXECUTABLE(trainSineWave ${TRAIN_SINE_WAVE_EXAMPLE}) 
 
-target_link_libraries(sineWaveLibrary dl ${CMAKE_THREAD_LIBS_INIT} ${Caffe2_LIBS})
+target_link_libraries(sineWaveLibrary dl ${CMAKE_THREAD_LIBS_INIT} ${Caffe2_LIBS} ${PROTOBUF_LIBRARY} glog)
 
 #link libraries to executable
 target_link_libraries(unitTests sineWaveLibrary)
