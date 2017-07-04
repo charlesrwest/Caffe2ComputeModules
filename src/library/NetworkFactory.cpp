@@ -2,6 +2,7 @@
 
 #include "UtilityFunctions.hpp"
 
+/*
 using namespace GoodBot;
 
 
@@ -13,3 +14,5 @@ std::unique_ptr<NetworkArchitecture> NetworkFactory::CreateFullyConnectedNetwork
 {
 return std::unique_ptr<NetworkArchitecture>(new FullyConnectedNetworkArchitecture("fully_connected_network_architecture_" + baseName + "_" + GenerateRandomHexString(5), inputParameters));
 }
+
+*/

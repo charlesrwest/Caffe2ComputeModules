@@ -7,34 +7,28 @@ FullyConnectedLayerDefinition::FullyConnectedLayerDefinition(const FullyConnecte
 {
 }
 
-const std::string& FullyConnectedLayerDefinition::Type() const
-{
-static const std::string type = "FullyConnectedLayerDefinition";
 
-return type;
-}
-
-const std::string& FullyConnectedLayerDefinition::Name() const
+std::string FullyConnectedLayerDefinition::Name() const
 {
 return layerName;
 }
 
-std::vector<std::string> FullyConnectedLayerDefinition::GetDeployInputBlobNames() const
+std::vector<std::string> FullyConnectedLayerDefinition::GetInputBlobNames() const
 {
 return {inputBlobName};
 }
 
-std::vector<std::string> FullyConnectedLayerDefinition::GetDeployOutputBlobNames() const
+std::vector<std::string> FullyConnectedLayerDefinition::GetOutputBlobNames() const
 {
 return {GetOutputBlobName()};
 }
 
-std::vector<std::string> FullyConnectedLayerDefinition::GetTrainingGradientBlobNames() const
+std::vector<std::string> FullyConnectedLayerDefinition::GetTrainableBlobNames() const
 {
-return {MakeGradientOperatorBlobName(GetOutputBlobName()), MakeGradientOperatorBlobName(GetFullyConnectedOutputBlobName())};
+return {GetWeightsBlobName(), GetBiasesBlobName()};
 }
 
-std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetDeployNetworkOperators() const
+std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetNetworkOperators() const
 {
 std::vector<caffe2::OperatorDef> result;
 
@@ -56,7 +50,7 @@ activationOperator.add_output(GetOutputBlobName());
 return result;
 }
 
-std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetTrainingNetworkInitializationOperators() const
+std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetNetworkInitializationOperators() const
 {
 std::vector<caffe2::OperatorDef> result;
 
@@ -70,7 +64,6 @@ weightShape.add_ints(numberOfNodes); //Number of nodes in this layer
 weightShape.add_ints(numberOfInputs); //Number of inputs to this layer
 weightOperator.add_output(GetWeightsBlobName());
 
-
 result.emplace_back();
 caffe2::OperatorDef& biasOperator = result.back();
 biasOperator.set_type(biasFillType);
@@ -79,10 +72,8 @@ caffe2::Argument& biasShape = *biasOperator.add_arg();
 biasShape.set_name("shape");
 biasShape.add_ints(numberOfNodes); //Number of nodes in this layer
 
-
 return result;
 }
-
 
 std::string FullyConnectedLayerDefinition::GetWeightsBlobName() const
 {

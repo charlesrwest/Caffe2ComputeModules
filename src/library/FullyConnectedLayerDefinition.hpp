@@ -21,19 +21,17 @@ class FullyConnectedLayerDefinition : public ComputeModuleDefinition
 public:
 FullyConnectedLayerDefinition(const FullyConnectedLayerDefinitionParameters& inputParameters);
 
-virtual const std::string& Type() const override;
+virtual std::string Name() const override;
 
-virtual const std::string& Name() const override;
+virtual std::vector<std::string> GetInputBlobNames() const override;
 
-virtual std::vector<std::string> GetDeployInputBlobNames() const override;
+virtual std::vector<std::string> GetOutputBlobNames() const override;
 
-virtual std::vector<std::string> GetDeployOutputBlobNames() const override;
+virtual std::vector<std::string> GetTrainableBlobNames() const override;
 
-virtual std::vector<std::string> GetTrainingGradientBlobNames() const override;
+virtual std::vector<caffe2::OperatorDef> GetNetworkOperators() const override;
 
-virtual std::vector<caffe2::OperatorDef> GetDeployNetworkOperators() const  override;
-
-virtual std::vector<caffe2::OperatorDef> GetTrainingNetworkInitializationOperators() const override;
+virtual std::vector<caffe2::OperatorDef> GetNetworkInitializationOperators() const override;
 
 std::string GetWeightsBlobName() const;
 

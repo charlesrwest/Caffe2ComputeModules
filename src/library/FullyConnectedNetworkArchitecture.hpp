@@ -1,10 +1,11 @@
 #pragma once
 
-#include "NetworkArchitecture.hpp"
+//#include "NetworkArchitecture.hpp"
 #include "ComputeModuleDefinition.hpp"
 
 #include<memory>
 
+/*
 namespace GoodBot
 {
 
@@ -37,6 +38,8 @@ virtual caffe2::NetDef GetTrainingNetwork() const override;
 virtual caffe2::NetDef GetTestNetwork() const override;
 
 virtual caffe2::NetDef GetDeployNetwork() const override;
+
+bool SetMode(const std::string& inputMode);
 
 int64_t GetNumberOfFullyConnectedLayers() const;
 
@@ -83,3 +86,4 @@ std::vector<std::unique_ptr<ComputeModuleDefinition>> layers;
 
 
 } 
+*/

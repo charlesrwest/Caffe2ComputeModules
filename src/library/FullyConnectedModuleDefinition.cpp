@@ -1,4 +1,5 @@
 #include "FullyConnectedModuleDefinition.hpp"
+#include "FullyConnectedLayerDefinition.hpp"
 
 #include<iostream>
 
@@ -23,77 +24,28 @@ layerParameters.inputBlobName = inputParameters.inputBlobName;
 }
 else
 {
-layerParameters.inputBlobName = layers[layerIndex - 1].GetOutputBlobName();
+layerParameters.inputBlobName = modules[layerIndex - 1]->GetOutputBlobNames()[0];
+layerParameters.numberOfInputs = inputParameters.numberOfNodesInLayers[layerIndex-1];
 }
 
 layerParameters.numberOfNodes = numberOfNodesInLayer;
 layerParameters.layerName = Name() + "_layer" + std::to_string(layerIndex);
 
-layers.emplace_back(layerParameters);
+AddModule(*(new FullyConnectedLayerDefinition(layerParameters)));
 }
 }
 
-const std::string& FullyConnectedModuleDefinition::Type() const
-{
-static const std::string type = "FullyConnectedModuleDefinition";
-
-return type;
-}
-
-const std::string& FullyConnectedModuleDefinition::Name() const
+std::string FullyConnectedModuleDefinition::Name() const
 {
 return moduleName;
 }
 
-std::vector<std::string> FullyConnectedModuleDefinition::GetDeployInputBlobNames() const
+std::vector<std::string> FullyConnectedModuleDefinition::GetInputBlobNames() const
 {
-return layers.front().GetDeployInputBlobNames();
+return modules.front()->GetInputBlobNames();
 }
 
-std::vector<std::string> FullyConnectedModuleDefinition::GetDeployOutputBlobNames() const
+std::vector<std::string> FullyConnectedModuleDefinition::GetOutputBlobNames() const
 {
-return layers.back().GetDeployOutputBlobNames();
-}
-
-std::vector<std::string> FullyConnectedModuleDefinition::GetTrainingGradientBlobNames() const
-{
-std::vector<std::string> results;
-
-for(std::vector<FullyConnectedLayerDefinition>::const_reverse_iterator iter = layers.rbegin(); iter != layers.rend(); iter++)
-{
-std::vector<std::string> layerGradientBlobNames = iter->GetTrainingGradientBlobNames();
-
-results.insert(results.end(), layerGradientBlobNames.begin(), layerGradientBlobNames.end());
-}
- 
-return results;
-}
-
-std::vector<caffe2::OperatorDef> FullyConnectedModuleDefinition::GetDeployNetworkOperators() const
-{
-std::vector<caffe2::OperatorDef> results;
-
-for(const FullyConnectedLayerDefinition& layer : layers)
-{
-std::vector<caffe2::OperatorDef> layerOperators = layer.GetDeployNetworkOperators();
-
-results.insert(results.end(), layerOperators.begin(), layerOperators.end());
-}
-
-return results;
-}
-
-std::vector<caffe2::OperatorDef> FullyConnectedModuleDefinition::GetTrainingNetworkInitializationOperators() const
-{
-std::vector<caffe2::OperatorDef> results;
-
-for(const FullyConnectedLayerDefinition& layer : layers)
-{
-std::vector<caffe2::OperatorDef> layerOperators = layer.GetTrainingNetworkInitializationOperators();
-
-results.insert(results.end(), layerOperators.begin(), layerOperators.end());
-}
-
-
-return results;
+return modules.back()->GetOutputBlobNames();
 }

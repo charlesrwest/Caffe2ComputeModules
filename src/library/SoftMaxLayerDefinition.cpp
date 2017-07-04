@@ -7,49 +7,34 @@ SoftMaxLayerDefinition::SoftMaxLayerDefinition(const SoftMaxLayerDefinitionParam
 {
 }
 
-const std::string& SoftMaxLayerDefinition::Type() const
-{
-static const std::string type = "SoftMaxLayerDefinition";
-
-return type;
-}
-
-const std::string& SoftMaxLayerDefinition::Name() const
+std::string SoftMaxLayerDefinition::Name() const
 {
 return layerName;
 }
 
-std::vector<std::string> SoftMaxLayerDefinition::GetDeployInputBlobNames() const
+std::vector<std::string> SoftMaxLayerDefinition::GetInputBlobNames() const
 {
-return {inputBlobName};
-}
-
-std::vector<std::string> SoftMaxLayerDefinition::GetTrainingInputBlobNames() const
+if((mode == "TRAIN") || (mode == "TEST"))
 {
 return {inputBlobName, trainingExpectedOutputBlobName};
 }
 
-std::vector<std::string> SoftMaxLayerDefinition::GetTestInputBlobNames() const
-{
-return {inputBlobName, testExpectedOutputBlobName};
+return {inputBlobName};
 }
 
-std::vector<std::string> SoftMaxLayerDefinition::GetDeployOutputBlobNames() const
+std::vector<std::string> SoftMaxLayerDefinition::GetOutputBlobNames() const
 {
-return {GetSoftMaxOutputBlobName()};
-}
-
-std::vector<std::string> SoftMaxLayerDefinition::GetTrainingOutputBlobNames() const
+if((mode == "TRAIN") || (mode == "TEST"))
 {
 return {GetSoftMaxOutputBlobName(), GetTrainingLossOutputBlobName()};
 }
 
-std::vector<std::string> SoftMaxLayerDefinition::GetTrainingGradientBlobNames() const
-{
-return {MakeGradientOperatorBlobName(GetTrainingLossOutputBlobName())};
+return {GetSoftMaxOutputBlobName()};
 }
 
-std::vector<caffe2::OperatorDef> SoftMaxLayerDefinition::GetDeployNetworkOperators() const
+std::vector<caffe2::OperatorDef> SoftMaxLayerDefinition::GetNetworkOperators() const
+{
+if(mode == "DEPLOY")
 {
 std::vector<caffe2::OperatorDef> results;
 
@@ -62,8 +47,7 @@ softMax.add_output(GetSoftMaxOutputBlobName());
 
 return results;
 }
-
-std::vector<caffe2::OperatorDef> SoftMaxLayerDefinition::GetTrainingNetworkOperators() const
+else if(mode == "TRAIN")
 {
 std::vector<caffe2::OperatorDef> results;
 
@@ -78,8 +62,7 @@ softMaxWithLoss.add_output(GetTrainingLossOutputBlobName());
 
 return results;
 }
-
-std::vector<caffe2::OperatorDef> SoftMaxLayerDefinition::GetTestNetworkOperators() const
+else if(mode == "TEST")
 {
 std::vector<caffe2::OperatorDef> results;
 
@@ -95,12 +78,10 @@ softMaxWithLoss.add_output(GetTestLossOutputBlobName());
 return results;
 }
 
-std::vector<caffe2::OperatorDef> SoftMaxLayerDefinition::GetTrainingNetworkInitializationOperators() const
-{
-return std::vector<caffe2::OperatorDef>();
+return {};
 }
 
-std::vector<caffe2::OperatorDef> SoftMaxLayerDefinition::GetTrainingGradientOperators() const
+std::vector<caffe2::OperatorDef> SoftMaxLayerDefinition::GetGradientOperators() const
 {
 std::vector<caffe2::OperatorDef> results;
 
@@ -118,13 +99,12 @@ gradient.add_output(MakeGradientOperatorBlobName(GetTrainingLossOutputBlobName()
 gradient.set_is_gradient_op(true);
 
 
-std::vector<caffe2::OperatorDef> normalGradientOperators = ComputeModuleDefinition::GetTrainingGradientOperators();
+std::vector<caffe2::OperatorDef> normalGradientOperators = ComputeModuleDefinition::GetGradientOperators();
 
 results.insert(results.end(), normalGradientOperators.begin(), normalGradientOperators.end());
 
 return results;
 }
-
 
 std::string SoftMaxLayerDefinition::GetSoftMaxOutputBlobName() const
 {

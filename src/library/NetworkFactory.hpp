@@ -1,5 +1,6 @@
 #pragma once
 
+/*
 #include "NetworkArchitecture.hpp"
 #include<memory>
 #include<string>
@@ -33,3 +34,4 @@ std::string baseName;
 
 
 } 
+*/

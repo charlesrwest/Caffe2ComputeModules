@@ -5,18 +5,16 @@
 namespace GoodBot
 {
 
-struct SoftMaxLayerDefinitionParameters
+struct AveragedLossLayerDefinitionParameters
 {
 std::string inputBlobName;
 std::string layerName;
-std::string trainingExpectedOutputBlobName;
-std::string testExpectedOutputBlobName;
 };
 
-class SoftMaxLayerDefinition : public ComputeModuleDefinition
+class AveragedLossLayerDefinition : public ComputeModuleDefinition
 {
 public:
-SoftMaxLayerDefinition(const SoftMaxLayerDefinitionParameters& inputParameters);
+AveragedLossLayerDefinition(const AveragedLossLayerDefinitionParameters& inputParameters);
 
 virtual std::string Name() const override;
 
@@ -28,18 +26,12 @@ virtual std::vector<caffe2::OperatorDef> GetNetworkOperators() const override;
 
 virtual std::vector<caffe2::OperatorDef> GetGradientOperators() const override;
 
-std::string GetSoftMaxOutputBlobName() const;
-
-std::string GetTrainingLossOutputBlobName() const;
-
-std::string GetTestLossOutputBlobName() const;
+std::string GetAveragedLossOutputBlobName() const;
 
 protected:
-std::string mode;
 std::string inputBlobName;
 std::string layerName;
-std::string trainingExpectedOutputBlobName;
-std::string testExpectedOutputBlobName;
+std::string mode;
 };
 
 
@@ -69,4 +61,4 @@ std::string testExpectedOutputBlobName;
 
 
 
-}
+} 
