@@ -11,6 +11,9 @@ std::string inputBlobName;
 std::string layerName;
 };
 
+/**
+This class is a straight forward implementation of the AveragedLoss operator.  See ComputeModuleDefinition for the function meanings.
+*/
 class AveragedLossLayerDefinition : public ComputeModuleDefinition
 {
 public:

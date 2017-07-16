@@ -13,6 +13,9 @@ std::string trainingExpectedOutputBlobName;
 std::string testExpectedOutputBlobName;
 };
 
+/**
+This class is a straight forward implementation of the "SquaredL2Distance" operator.  See ComputeModuleDefinition for the function meanings.
+*/
 class L2LossLayerDefinition : public ComputeModuleDefinition
 {
 public:

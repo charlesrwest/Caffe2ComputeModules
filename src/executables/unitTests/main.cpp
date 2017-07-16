@@ -11,6 +11,7 @@
 #include<cmath>
 #include<cassert>
 #include "AveragedL2LossModuleDefinition.hpp"
+#include "AdamSolver.hpp"
 
 const double PI  =3.141592653589793238463;
 const float  PI_F=3.14159265358979f;
@@ -29,29 +30,30 @@ std::swap(expectedOutputData[index], expectedOutputData[elementToSwapWithIndex])
 }
 };
 
-//Need iter module -> init to zero and then increment for all
-
-//Make iter module
-//Make adam update module
-//Integrate adam update module into FC layers
-
+/**
+Not truly a test case, example of training using the new compute module way of specifying networks.
+*/
 TEST_CASE("Test generated Fully Connected NetDefs", "[Example]")
 {
-int64_t numberOfTrainingExamples = 1000;
+//Make 10000 training examples
+int64_t numberOfTrainingExamples = 10000;
 std::vector<float> trainingInputs;
 std::vector<float> trainingExpectedOutputs;
 
 for(int64_t trainingExampleIndex = 0; trainingExampleIndex < numberOfTrainingExamples; trainingExampleIndex++)
 {
-trainingInputs.emplace_back(trainingExampleIndex*2.0*PI/(numberOfTrainingExamples+1));
-trainingExpectedOutputs.emplace_back(sin(trainingInputs.back()));
+trainingInputs.emplace_back((((double) trainingExampleIndex)/(numberOfTrainingExamples+1))*2.0 - 1.0);
+trainingExpectedOutputs.emplace_back(sin(((double) trainingExampleIndex)/(numberOfTrainingExamples+1)*2.0*PI)*.5 + .5);
 }
+
+//Shuffle the examples
 PairedRandomShuffle(trainingInputs, trainingExpectedOutputs);
 
-
+//Create the Caffe2 workspace/context
 caffe2::Workspace workspace;
 caffe2::CPUContext context;
 
+//Create the blobs to inject the sine input/output for training
 caffe2::TensorCPU& inputBlob = *workspace.CreateBlob("inputBlob")->GetMutable<caffe2::TensorCPU>();
 inputBlob.Resize(1, 1);
 inputBlob.mutable_data<float>();
@@ -61,18 +63,17 @@ caffe2::TensorCPU& expectedOutputBlob = *workspace.CreateBlob(trainingExpectedOu
 expectedOutputBlob.Resize(1, 1);
 expectedOutputBlob.mutable_data<float>();
 
+//Define a 3 layer fully connected network with default (sigmoidal) activation
 GoodBot::FullyConnectedModuleDefinitionParameters networkParameters;
 networkParameters.inputBlobName = "inputBlob";
 networkParameters.numberOfInputs = 1;
 networkParameters.numberOfNodesInLayers = {100, 100, 1};
 networkParameters.moduleName = "HelloNetwork";
 
-
-
 GoodBot::FullyConnectedModuleDefinition network(networkParameters);
 network.SetMode("TRAIN");
 
-//Add a module for loss
+//Add a module for computing loss to the end of the network
 GoodBot::AveragedL2LossModuleDefinitionParameters lossParameters;
 lossParameters.inputBlobName = network.GetOutputBlobNames()[0];
 lossParameters.moduleName = "AveragedL2Loss";
@@ -82,8 +83,18 @@ lossParameters.testExpectedOutputBlobName = trainingExpectedOutputBlobName;
 network.AddModule(*(new  GoodBot::AveragedL2LossModuleDefinition(lossParameters)));
 network.SetMode("TRAIN");
 
+//Add a solver module for training/updating
+GoodBot::AdamSolverParameters solverParams;
+solverParams.moduleName = "AdamSolver";
+solverParams.trainableParameterNames = network.GetTrainableBlobNames();
+solverParams.trainableParameterShapes = network.GetTrainableBlobShapes();
+
+network.AddModule(*(new GoodBot::AdamSolver(solverParams)));
+
+
 SECTION("Test training network", "[networkArchitecture]")
 {
+//Add function to allow printing of network architectures
 std::function<void(const google::protobuf::Message&)> print = [&](const google::protobuf::Message& inputMessage)
 {
 std::string buffer;
@@ -93,32 +104,48 @@ google::protobuf::TextFormat::PrintToString(inputMessage, &buffer);
 std::cout << buffer<<std::endl;
 };
 
+//Training the network, so set the mode to train
 network.SetMode("TRAIN");
 
-//Initialize the network
+//Initialize the network by automatically generating the NetDef for network initialization in "TRAIN" mode
 caffe2::NetDef trainingNetworkInitializationDefinition = network.GetInitializationNetwork();
 
+//Print out the generated network architecture
 print(trainingNetworkInitializationDefinition);
 
+//Create and run the initialization network.
 caffe2::NetBase* initializationNetwork = workspace.CreateNet(trainingNetworkInitializationDefinition);
 initializationNetwork->Run();
 
-caffe2::NetDef trainingNetworkDefinition = network.GetNetwork();
+//Automatically generate the training network
+caffe2::NetDef trainingNetworkDefinition = network.GetNetwork(workspace.Blobs());
 
 print(trainingNetworkDefinition);
 
-
+//Instance the training network implementation
 caffe2::NetBase* trainingNetwork = workspace.CreateNet(trainingNetworkDefinition);
 
-/*
+
+//Create the deploy version of the network
+network.SetMode("DEPLOY");
+
+caffe2::NetDef deployNetworkDefinition = network.GetNetwork(workspace.Blobs());
+
+caffe2::NetBase* deployNetwork = workspace.CreateNet(deployNetworkDefinition);
+
+//Get the blob for network output/iteration count for later testing
+caffe2::TensorCPU& networkOutput = *workspace.GetBlob(network.GetOutputBlobNames()[0])->GetMutable<caffe2::TensorCPU>();
+
+caffe2::TensorCPU& iter = *workspace.GetBlob("AdamSolver_iteration_iterator")->GetMutable<caffe2::TensorCPU>();
+
 //Train the network
-int64_t numberOfTrainingIterations = 1000000;
+int64_t numberOfTrainingIterations = 100000;
+
 for(int64_t iteration = 0; iteration < numberOfTrainingIterations; iteration++)
 {
-//Shuffle data every run through
+//Shuffle data every epoc through
 if((iteration % trainingInputs.size()) == 0)
 {
-//std::cout << "Completed epoc " << (iteration / trainingInputs.size()) << " of " << numberOfTrainingIterations / trainingInputs.size() << std::endl;
 PairedRandomShuffle(trainingInputs, trainingExpectedOutputs);
 }
 
@@ -126,11 +153,82 @@ PairedRandomShuffle(trainingInputs, trainingExpectedOutputs);
 memcpy(inputBlob.mutable_data<float>(), &trainingInputs[iteration % trainingInputs.size()], inputBlob.nbytes());
 memcpy(expectedOutputBlob.mutable_data<float>(), &trainingExpectedOutputs[iteration % trainingExpectedOutputs.size()], expectedOutputBlob.nbytes());
 
+//Run network with loaded instance
 trainingNetwork->Run();
-}
-*/
 
 }
+
+//Output deploy results
+{
+std::ofstream pretrainedDeployResults("postTrainingDeployResults.csv");
+for(int64_t iteration = 0; iteration < trainingInputs.size(); iteration++)
+{
+//Load data into blobs to csv for viewing
+memcpy(inputBlob.mutable_data<float>(), &trainingInputs[iteration % trainingInputs.size()], inputBlob.nbytes());
+
+deployNetwork->Run();
+
+pretrainedDeployResults << *inputBlob.mutable_data<float>() << ", " << *networkOutput.mutable_data<float>() << ", " <<  *iter.mutable_data<int64_t>() << std::endl;
+}
 }
 
+}
+
+
+}
+
+TEST_CASE("Run iterator network and get data", "[Example]")
+{
+caffe2::Workspace workspace;
+caffe2::CPUContext context;
+
+std::string IteratorBlobName = "IterBlob";
+caffe2::OperatorDef iterInitializationOperator;
+
+iterInitializationOperator.set_type("ConstantFill");
+iterInitializationOperator.add_output(IteratorBlobName);
+caffe2::Argument& shape = *iterInitializationOperator.add_arg();
+shape.set_name("shape");
+shape.add_ints(1);
+caffe2::Argument& value = *iterInitializationOperator.add_arg();
+value.set_name("value");
+value.set_i(0);
+caffe2::Argument& dataType = *iterInitializationOperator.add_arg();
+dataType.set_name("dtype");
+dataType.set_i(caffe2::TensorProto_DataType_INT64); 
+
+caffe2::NetDef initNetwork;
+initNetwork.set_name("iter_init");
+
+*initNetwork.add_op() = iterInitializationOperator;
+
+caffe2::NetBase* initializationNetwork = workspace.CreateNet(initNetwork);
+initializationNetwork->Run();
+
+caffe2::OperatorDef iterOperator;
+
+iterOperator.set_type("Iter");
+iterOperator.add_input(IteratorBlobName);
+iterOperator.add_output(IteratorBlobName);
+
+caffe2::NetDef iterNetwork;
+iterNetwork.set_name("iter_net");
+
+*iterNetwork.add_op() = iterOperator;
+
+caffe2::NetBase* iterationNetwork = workspace.CreateNet(iterNetwork);
+
+caffe2::TensorCPU& iteratorBlob = *workspace.GetBlob(IteratorBlobName)->GetMutable<caffe2::TensorCPU>();
+
+for(int64_t counter = 0; counter < 10000; counter++)
+{
+REQUIRE(iteratorBlob.mutable_data<int64_t>()[0] == counter);
+
+iterationNetwork->Run();
+}
+
+
+
+
+}
 

@@ -42,6 +42,11 @@ std::vector<std::string> ComputeModuleDefinition::GetTrainableBlobNames() const
 return {};
 }
 
+std::vector<std::vector<int64_t>> ComputeModuleDefinition::GetTrainableBlobShapes() const
+{
+return {};
+}
+
 std::vector<std::string> ComputeModuleDefinition::GetGradientBlobNames() const
 {
 std::vector<caffe2::OperatorDef> gradientOperators = GetGradientOperators();
@@ -104,27 +109,26 @@ for(const caffe2::OperatorDef& operatorDefinition : initOperators)
 return network;
 }
 
-caffe2::NetDef ComputeModuleDefinition::GetNetwork() const
+caffe2::NetDef ComputeModuleDefinition::GetNetwork(const std::vector<std::string>& inputPreviouslyExistingBlobNames) const
 {
 caffe2::NetDef network;
 network.set_name(Name() + "_" + Mode());
 
 std::vector<caffe2::OperatorDef> networkOperators = GetNetworkOperators();
 
-for(const caffe2::OperatorDef& operatorDefinition : networkOperators)
-{
-*network.add_op() = operatorDefinition; //Add to network
-}
-
 if(mode == "TRAIN")
 {
 //Add any gradient calculations to the network too
 std::vector<caffe2::OperatorDef> gradientOperators = GetGradientOperators();
 
-for(const caffe2::OperatorDef& gradientOperator : gradientOperators)
-{
-*network.add_op() = gradientOperator; //Add to network
+networkOperators.insert(networkOperators.end(), gradientOperators.begin(), gradientOperators.end());
 }
+
+networkOperators = ReorderOperatorsToResolveDependencies(networkOperators, inputPreviouslyExistingBlobNames);
+
+for(const caffe2::OperatorDef& operatorDefinition : networkOperators)
+{
+*network.add_op() = operatorDefinition; //Add to network
 }
 
 return network;

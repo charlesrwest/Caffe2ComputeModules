@@ -13,6 +13,9 @@ std::string trainingExpectedOutputBlobName;
 std::string testExpectedOutputBlobName;
 };
 
+/**
+This class is a straight forward implementation of the "Softmax"/"SoftmaxWithLoss" operators (depending on mode).  See ComputeModuleDefinition for the function meanings.
+*/
 class SoftMaxLayerDefinition : public ComputeModuleDefinition
 {
 public:

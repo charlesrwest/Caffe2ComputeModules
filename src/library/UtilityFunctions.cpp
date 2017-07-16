@@ -49,3 +49,69 @@ gradientOperator.set_is_gradient_op(true); //Mark as gradient operator
 
 return operatorsAndWrappers.ops_;
 }
+
+std::vector<caffe2::OperatorDef> GoodBot::ReorderOperatorsToResolveDependencies(const std::vector<caffe2::OperatorDef>& inputOperators, const std::vector<std::string>& inputExistingBlobNames)
+{
+//Inefficient, but doesn't really matter all that much at this scale
+std::vector<caffe2::OperatorDef> results;
+
+using v_size_t = std::vector<caffe2::OperatorDef>::size_type;
+
+std::set<std::string> availableInputBlobNames;
+availableInputBlobNames.insert(inputExistingBlobNames.begin(), inputExistingBlobNames.end());
+
+std::set<v_size_t> processedEntryIndices;
+
+v_size_t numberOfEntriesRemovedThisLoop = 1;  //Initialize to non-zero to prevent exit at start of loop
+
+std::function<bool(const caffe2::OperatorDef&)> RequiredInputBlobsAreAvailable = [&](const caffe2::OperatorDef& inputOperator)
+{
+for(int64_t inputIndex = 0; inputIndex < inputOperator.input_size(); inputIndex++)
+{
+if(availableInputBlobNames.count(inputOperator.input(inputIndex)) == 0)
+{
+return false; //This operator requires an input that is not available yet
+}
+}
+
+return true; //All input requirements are satisfied
+};
+
+std::function<void(v_size_t)> AddOperatorToResults = [&](v_size_t inputOperatorIndex)
+{
+const caffe2::OperatorDef& operatorToAdd = inputOperators[inputOperatorIndex];
+
+results.emplace_back(operatorToAdd);
+//Add associated outputs to the available blob pool
+for(int64_t outputIndex = 0; outputIndex < operatorToAdd.output_size(); outputIndex++)
+{
+availableInputBlobNames.emplace(operatorToAdd.output(outputIndex));
+}
+
+processedEntryIndices.emplace(inputOperatorIndex);
+numberOfEntriesRemovedThisLoop++;
+};
+
+while((numberOfEntriesRemovedThisLoop > 0) && (results.size() < inputOperators.size()))
+{
+numberOfEntriesRemovedThisLoop = 0;
+
+for(v_size_t operatorIndex = 0; operatorIndex < inputOperators.size(); operatorIndex++)
+{
+const caffe2::OperatorDef& currentOperator = inputOperators[operatorIndex];
+
+if(processedEntryIndices.count(operatorIndex) > 0)
+{
+continue; //We already have this entry, so skip
+}
+
+if(RequiredInputBlobsAreAvailable(currentOperator))
+{
+AddOperatorToResults(operatorIndex);
+}
+}
+
+}
+
+return results;
+}

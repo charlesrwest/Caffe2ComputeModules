@@ -16,6 +16,9 @@ std::string biasFillType = "ConstantFill";
 std::string activationType = "Sigmoid";
 };
 
+/**
+This class is a straight forward implementation of the  a fully connected layer, which consists of a "FC" operator followed by an activation operator.  See ComputeModuleDefinition for the function meanings.
+*/
 class FullyConnectedLayerDefinition : public ComputeModuleDefinition
 {
 public:
@@ -28,6 +31,8 @@ virtual std::vector<std::string> GetInputBlobNames() const override;
 virtual std::vector<std::string> GetOutputBlobNames() const override;
 
 virtual std::vector<std::string> GetTrainableBlobNames() const override;
+
+virtual std::vector<std::vector<int64_t>> GetTrainableBlobShapes() const override;
 
 virtual std::vector<caffe2::OperatorDef> GetNetworkOperators() const override;
 

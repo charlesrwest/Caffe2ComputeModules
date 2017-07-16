@@ -33,6 +33,10 @@ layerParameters.layerName = Name() + "_layer" + std::to_string(layerIndex);
 
 AddModule(*(new FullyConnectedLayerDefinition(layerParameters)));
 }
+
+//In case of solver, etc modules being added
+storedInputBlobNames = modules.front()->GetInputBlobNames();
+storedOutputBlobNames = modules.back()->GetOutputBlobNames();
 }
 
 std::string FullyConnectedModuleDefinition::Name() const
@@ -42,10 +46,10 @@ return moduleName;
 
 std::vector<std::string> FullyConnectedModuleDefinition::GetInputBlobNames() const
 {
-return modules.front()->GetInputBlobNames();
+return storedInputBlobNames;
 }
 
 std::vector<std::string> FullyConnectedModuleDefinition::GetOutputBlobNames() const
 {
-return modules.back()->GetOutputBlobNames();
+return storedOutputBlobNames;
 }

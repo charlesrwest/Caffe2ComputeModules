@@ -42,6 +42,20 @@ trainableBlobNames.insert(trainableBlobNames.end(), moduleTrainableBlobNames.beg
 return trainableBlobNames;
 }
 
+std::vector<std::vector<int64_t>> CompositeComputeModuleDefinition::GetTrainableBlobShapes() const
+{
+std::vector<std::vector<int64_t>> trainableBlobShapes;
+
+for(const std::unique_ptr<ComputeModuleDefinition>& module : modules)
+{
+std::vector<std::vector<int64_t>> moduleTrainableBlobShapes = module->GetTrainableBlobShapes();
+
+trainableBlobShapes.insert(trainableBlobShapes.end(), moduleTrainableBlobShapes.begin(), moduleTrainableBlobShapes.end());
+}
+
+return trainableBlobShapes;
+}
+
 std::vector<caffe2::OperatorDef> CompositeComputeModuleDefinition::GetNetworkOperators() const
 {
 std::vector<caffe2::OperatorDef> results;
@@ -63,6 +77,8 @@ std::vector<caffe2::OperatorDef> results;
 for(const std::unique_ptr<ComputeModuleDefinition>& module : modules)
 {
 std::vector<caffe2::OperatorDef> moduleOperators = module->GetNetworkInitializationOperators();
+
+std::cout << module->Name() << " has " << moduleOperators.size() << " init operators" << std::endl;
 
 results.insert(results.end(), moduleOperators.begin(), moduleOperators.end());
 }

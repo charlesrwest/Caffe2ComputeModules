@@ -16,6 +16,9 @@ std::string biasFillType = "ConstantFill";
 std::string activationType = "Sigmoid";
 };
 
+/**
+This class represents one or more fully connected layers sequentially connected to each other.  numberOfNodesInLayers determines how many neurons to have at each layer. 
+*/
 class FullyConnectedModuleDefinition : public CompositeComputeModuleDefinition
 {
 public:
@@ -29,6 +32,9 @@ virtual std::vector<std::string> GetOutputBlobNames() const override;
 
 protected:
 std::string moduleName;
+
+std::vector<std::string> storedInputBlobNames;
+std::vector<std::string> storedOutputBlobNames;
 };
 
 

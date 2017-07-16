@@ -28,6 +28,11 @@ std::vector<std::string> FullyConnectedLayerDefinition::GetTrainableBlobNames() 
 return {GetWeightsBlobName(), GetBiasesBlobName()};
 }
 
+std::vector<std::vector<int64_t>> FullyConnectedLayerDefinition::GetTrainableBlobShapes() const
+{
+return {{numberOfNodes, numberOfInputs}, {numberOfNodes}}; //Weights, bias
+}
+
 std::vector<caffe2::OperatorDef> FullyConnectedLayerDefinition::GetNetworkOperators() const
 {
 std::vector<caffe2::OperatorDef> result;

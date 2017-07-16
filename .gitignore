@@ -12,4 +12,4 @@ moc_*
 build/bin/*
 /doc/*
 Doxyfile
-
+build/*
